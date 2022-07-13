@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import torchvision
 import torch.optim as optim
 from torchvision import datasets, transforms
-
+from pathlib import Path
 from models.wideresnet import *
 from models.resnet import *
 from trades import trades_loss
@@ -21,7 +21,7 @@ parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
 parser.add_argument('--test-batch-size', type=int, default=128, metavar='N',
                     help='input batch size for testing (default: 128)')
-parser.add_argument('--epochs', type=int, default=76, metavar='N',
+parser.add_argument('--epochs', type=int, default=100, metavar='N',
                     help='number of epochs to train')
 parser.add_argument('--weight-decay', '--wd', default=2e-4,
                     type=float, metavar='W')
@@ -47,6 +47,7 @@ parser.add_argument('--model-dir', default='./model-cifar-wideResNet',
                     help='directory of model for saving checkpoint')
 parser.add_argument('--save-freq', '-s', default=1, type=int, metavar='N',
                     help='save frequency')
+parser.add_argument("--pretrained", default="./backbone/trades_resnet18.pth", type=Path, help="path to pretrained model")
 
 args = parser.parse_args()
 
@@ -162,7 +163,10 @@ def adjust_learning_rate(optimizer, epoch):
 
 def main():
     # init model, ResNet18() can be also used here for training
-    model = WideResNet().to(device)
+    model = ResNet18().to(device)
+    state_dict = torch.load(args.pretrained, map_location="cpu")
+    backbone_state_dict = {s.replace("backbone.", ""): state_dict[s] for s in state_dict if "backbone." in s}
+    model.load_state_dict(backbone_state_dict, strict=False)
     optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
 
     for epoch in range(1, args.epochs + 1):
