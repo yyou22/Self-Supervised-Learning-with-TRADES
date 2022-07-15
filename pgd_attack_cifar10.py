@@ -11,6 +11,9 @@ from torchvision import datasets, transforms
 from models.wideresnet import *
 from models.resnet import *
 
+import mlflow
+import mlflow.pytorch
+import time 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR PGD Attack Evaluation')
 parser.add_argument('--test-batch-size', type=int, default=200, metavar='N',
@@ -119,14 +122,17 @@ def eval_adv_test_whitebox(model, device, test_loader):
     model.eval()
     robust_err_total = 0
     natural_err_total = 0
-
+    step = 0
     for data, target in test_loader:
+        step+=1
         data, target = data.to(device), target.to(device)
         # pgd attack
         X, y = Variable(data, requires_grad=True), Variable(target)
         err_natural, err_robust = _pgd_whitebox(model, X, y)
         robust_err_total += err_robust
         natural_err_total += err_natural
+        mlflow.log_metric("robust_err_total", robust_err_total, step=step)
+        mlflow.log_metric("natural_err_total", natural_err_total, step=step)
     print('natural_err_total: ', natural_err_total)
     print('robust_err_total: ', robust_err_total)
 
@@ -139,14 +145,17 @@ def eval_adv_test_blackbox(model_target, model_source, device, test_loader):
     model_source.eval()
     robust_err_total = 0
     natural_err_total = 0
-
+    step = 0
     for data, target in test_loader:
+        step+=1
         data, target = data.to(device), target.to(device)
         # pgd attack
         X, y = Variable(data, requires_grad=True), Variable(target)
         err_natural, err_robust = _pgd_blackbox(model_target, model_source, X, y)
         robust_err_total += err_robust
         natural_err_total += err_natural
+        mlflow.log_metric("robust_err_total", robust_err_total, step=step)
+        mlflow.log_metric("natural_err_total", natural_err_total, step=step)
     print('natural_err_total: ', natural_err_total)
     print('robust_err_total: ', robust_err_total)
 
@@ -172,4 +181,19 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    tracking_uri = "http://ec2-18-206-121-84.compute-1.amazonaws.com"
+    mlflow.set_tracking_uri(tracking_uri)
+    client = mlflow.tracking.MlflowClient(tracking_uri=tracking_uri)
+    expr_name = "pgd_attack_cifar10.py"
+    try:
+        # create a new experiment (do not replace)
+        s3_bucket = "s3://mlflow-research-runs" # replace this value
+        experiment = mlflow.create_experiment (expr_name, s3_bucket)
+    except Exception as e:
+        # print (e)
+        experiment = mlflow.get_experiment_by_name(expr_name)
+    with mlflow.start_run() as run:  
+        # Log our parameters into mlflow
+        for key, value in vars(args).items():
+            mlflow.log_param(key, value)
+        main()

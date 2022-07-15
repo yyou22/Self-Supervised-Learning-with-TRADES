@@ -12,6 +12,10 @@ from models.wideresnet import *
 from models.resnet import *
 from trades import trades_loss
 
+import mlflow
+import mlflow.pytorch
+import time 
+
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
                     help='input batch size for training (default: 128)')
@@ -71,6 +75,7 @@ test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_si
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
+    start_time = last_logging = time.time()
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
@@ -88,7 +93,15 @@ def train(args, model, device, train_loader, optimizer, epoch):
                            beta=args.beta)
         loss.backward()
         optimizer.step()
-
+        current_time = time.time()
+        stats = dict(
+                    epoch=epoch,
+                    step=batch_idx,
+                    loss=loss.item(),
+                    time=int(current_time - start_time)
+                )
+        for key, value in stats.items():
+            mlflow.log_metric(key, value, step=batch_idx)
         # print progress
         if batch_idx % args.log_interval == 0:
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -174,4 +187,19 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    tracking_uri = "http://ec2-18-206-121-84.compute-1.amazonaws.com"
+    mlflow.set_tracking_uri(tracking_uri)
+    client = mlflow.tracking.MlflowClient(tracking_uri=tracking_uri)
+    expr_name = "train_trades_cifar10.py"
+    try:
+        # create a new experiment (do not replace)
+        s3_bucket = "s3://mlflow-research-runs" # replace this value
+        experiment = mlflow.create_experiment (expr_name, s3_bucket)
+    except Exception as e:
+        # print (e)
+        experiment = mlflow.get_experiment_by_name(expr_name)
+    with mlflow.start_run() as run:  
+        # Log our parameters into mlflow
+        for key, value in vars(args).items():
+            mlflow.log_param(key, value)
+        main()
