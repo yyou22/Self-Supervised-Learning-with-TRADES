@@ -192,6 +192,8 @@ if __name__ == '__main__':
     except Exception as e:
         # print (e)
         experiment = mlflow.get_experiment_by_name(expr_name)
+    
+    mlflow.set_experiment (expr_name)
     with mlflow.start_run() as run:  
         # Log our parameters into mlflow
         for key, value in vars(args).items():
