@@ -14,7 +14,7 @@ from trades import trades_loss
 
 import mlflow
 import mlflow.pytorch
-import time 
+import time
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR TRADES Adversarial Training')
 parser.add_argument('--batch-size', type=int, default=128, metavar='N',
@@ -37,7 +37,7 @@ parser.add_argument('--num-steps', default=10,
                     help='perturb number of steps')
 parser.add_argument('--step-size', default=0.007,
                     help='perturb step size')
-parser.add_argument('--beta', default=6.0,
+parser.add_argument('--beta', default=5.0,
                     help='regularization, i.e., 1/lambda in TRADES')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -202,9 +202,9 @@ if __name__ == '__main__':
     except Exception as e:
         # print (e)
         experiment = mlflow.get_experiment_by_name(expr_name)
-    
+
     mlflow.set_experiment (expr_name)
-    with mlflow.start_run() as run:  
+    with mlflow.start_run() as run:
         # Log our parameters into mlflow
         for key, value in vars(args).items():
             mlflow.log_param(key, value)
