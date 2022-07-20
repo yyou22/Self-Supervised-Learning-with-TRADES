@@ -37,7 +37,7 @@ parser.add_argument('--num-steps', default=10,
                     help='perturb number of steps')
 parser.add_argument('--step-size', default=0.007,
                     help='perturb step size')
-parser.add_argument('--beta', default=5.0,
+parser.add_argument('--beta', default=6.0,
                     help='regularization, i.e., 1/lambda in TRADES')
 parser.add_argument('--seed', type=int, default=1, metavar='S',
                     help='random seed (default: 1)')
@@ -163,7 +163,7 @@ def adjust_learning_rate(optimizer, epoch):
 
 def main():
     # init model, ResNet18() can be also used here for training
-    model = ResNet18().to(device)
+    model = WideResNet().to(device)
     state_dict = torch.load(args.pretrained, map_location="cpu")
     backbone_state_dict = {s.replace("backbone.", ""): state_dict[s] for s in state_dict if "backbone." in s}
     model.load_state_dict(backbone_state_dict, strict=False)
