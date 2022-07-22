@@ -101,7 +101,7 @@ def eval_adv_test_whitebox(model, device, X_adv_data, X_data, Y_data):
 def main():
     # white-box attack
     # load model
-    model = WideResNet().to(device)
+    model = ResNet18().to(device)
     model.load_state_dict(torch.load(args.model_path))
 
     # load data
