@@ -165,7 +165,7 @@ def main():
     if args.white_box_attack:
         # white-box attack
         print('pgd white-box attack')
-        model = WideResNet().to(device)
+        model = ResNet18().to(device)
         model.load_state_dict(torch.load(args.model_path))
 
         eval_adv_test_whitebox(model, device, test_loader)
